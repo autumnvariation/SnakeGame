@@ -7,15 +7,13 @@ import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class SnakeGamePanel extends JPanel implements KeyListener {
     private static final double START_GAME_SPEED = 10; //FPS
-    private static final double GAME_SPEED_INCREMENT = 0.5; //FPS
-    private static final double MAX_GAME_SPEED = 20; //FPS
+    private static final double GAME_SPEED_INCREMENT = 5; //FPS
+    private static final double MAX_GAME_SPEED = 100; //FPS
     private static final int SNAKE_START_SIZE = 3;
     private static final int BOARD_WIDTH = 160;
     private static final int BOARD_HEIGHT = 90;
@@ -60,8 +58,8 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                     score++;
                     snakeSize++;
                     createNewApple();
-                    if (currentGameSpeed < MAX_GAME_SPEED){
-                        currentGameSpeed += GAME_SPEED_INCREMENT;
+                    if (currentGameSpeed > 1000/MAX_GAME_SPEED){
+                        currentGameSpeed = 1000/(1000/currentGameSpeed + GAME_SPEED_INCREMENT);
                     }
                 }
                 TimeUnit.MICROSECONDS.sleep((long)currentGameSpeed * 1000);
@@ -113,7 +111,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
 
         int keyCode = currentKeyEvent.getKeyCode();
         switch (keyCode) {
-            case KeyEvent.VK_UP -> {
+            case KeyEvent.VK_UP, KeyEvent.VK_W -> {
                 if (ySnakeHead - 1 < 0){
                     return false;
                 }
@@ -138,7 +136,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                 board[xSnakeHead][ySnakeHead - 1] = snakeSize;
                 ySnakeHead--;
             }
-            case KeyEvent.VK_DOWN -> {
+            case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
                 if (ySnakeHead + 1 > board[0].length - 1){
                     return false;
                 }
@@ -161,7 +159,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                 board[xSnakeHead][ySnakeHead + 1] = snakeSize;
                 ySnakeHead++;
             }
-            case KeyEvent.VK_LEFT -> {
+            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {
                 if (xSnakeHead - 1 < 0){
                     return false;
                 }
@@ -184,7 +182,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                 board[xSnakeHead - 1][ySnakeHead] = snakeSize;
                 xSnakeHead--;
             }
-            case KeyEvent.VK_RIGHT -> {
+            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {
                 if (xSnakeHead + 1 > board.length - 1){
                     return false;
                 }
@@ -239,7 +237,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         ge.registerFont(customFont);
         g.setFont(customFont);
         g.setColor(new Color(255,0,0,50));
-        g.drawString(String.valueOf(score), (((BOARD_WIDTH-1) * TILE_SIZE) / 2) - 2 * TILE_SIZE * String.valueOf(score).length() - (String.valueOf(score).length() - 1) * TILE_SIZE, ((BOARD_HEIGHT - 1) * TILE_SIZE/2) + 4 * TILE_SIZE);
+        g.drawString(String.valueOf(score), (((BOARD_WIDTH-1) * TILE_SIZE) / 2) - 2 * TILE_SIZE * String.valueOf(score).length() - (String.valueOf(score).length() - 1) * TILE_SIZE, ((BOARD_HEIGHT - 1) * TILE_SIZE/4));
 
         for (int x = 0; x < board.length; x++) {
             for (int y = 0; y < board[0].length; y++) {
@@ -311,20 +309,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
 
         int keyCode = e.getKeyCode();
         switch (keyCode) {
-            case KeyEvent.VK_UP -> {
-                System.out.println("up");
-                queue.add(e);
-            }
-            case KeyEvent.VK_DOWN -> {
-                System.out.println("down");
-                queue.add(e);
-            }
-            case KeyEvent.VK_LEFT -> {
-                System.out.println("left");
-                queue.add(e);
-            }
-            case KeyEvent.VK_RIGHT -> {
-                System.out.println("right");
+            case KeyEvent.VK_UP, KeyEvent.VK_RIGHT, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_W, KeyEvent.VK_D, KeyEvent.VK_A, KeyEvent.VK_S -> {
                 queue.add(e);
             }
         }
