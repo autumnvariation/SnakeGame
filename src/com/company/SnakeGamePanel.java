@@ -17,10 +17,10 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
     private static final double GAME_SPEED_INCREMENT = 0.5; //FPS
     private static final double MAX_GAME_SPEED = 20; //FPS
     private static final int SNAKE_START_SIZE = 3;
-    private static final int BOARD_WIDTH = 20;
-    private static final int BOARD_HEIGHT = 20;
-    private static final int TILE_SIZE = 40;
-    private static final Color SNAKE_RGB = new Color(11, 59, 3);
+    private static final int BOARD_WIDTH = 160;
+    private static final int BOARD_HEIGHT = 90;
+    private static final int TILE_SIZE = 16;
+    private static final Color SNAKE_RGB = new Color(190, 70, 251);
     private static final boolean SHADOW_MODE = true;
     private static final Color BACKGROUND_COLOR = Color.black;
     public int[][] board;
@@ -227,6 +227,19 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Font customFont = null;
+        try {
+            customFont = Font.createFont(Font.TRUETYPE_FONT, new File("font\\MinecraftRegular-Bmg3.ttf")).deriveFont((float) TILE_SIZE * 10);
+        } catch (FontFormatException | IOException e) {
+            e.printStackTrace();
+        }
+
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        //register the font
+        ge.registerFont(customFont);
+        g.setFont(customFont);
+        g.setColor(new Color(255,0,0,50));
+        g.drawString(String.valueOf(score), (((BOARD_WIDTH-1) * TILE_SIZE) / 2) - 2 * TILE_SIZE * String.valueOf(score).length() - (String.valueOf(score).length() - 1) * TILE_SIZE, ((BOARD_HEIGHT - 1) * TILE_SIZE/2) + 4 * TILE_SIZE);
 
         for (int x = 0; x < board.length; x++) {
             for (int y = 0; y < board[0].length; y++) {
@@ -254,22 +267,6 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         }
         g.setColor(new Color(255,0,0,255));
         g.fillRect(xApplePosition * TILE_SIZE, yApplePosition * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-
-        Font customFont = null;
-        try {
-            customFont = Font.createFont(Font.TRUETYPE_FONT, new File("font\\MinecraftRegular-Bmg3.ttf")).deriveFont((float) TILE_SIZE);
-        } catch (FontFormatException | IOException e) {
-            e.printStackTrace();
-        }
-        if (score > 9){
-            customFont = customFont.deriveFont(Font.PLAIN, (float)TILE_SIZE/2);
-        }
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        //register the font
-        ge.registerFont(customFont);
-        g.setFont(customFont);
-        g.setColor(Color.white);
-        g.drawString(String.valueOf(score), xApplePosition * TILE_SIZE + TILE_SIZE/4, yApplePosition * TILE_SIZE + TILE_SIZE - TILE_SIZE/8);
     }
 
     @Override
