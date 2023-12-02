@@ -1,5 +1,6 @@
 package com.company;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -48,7 +49,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         addKeyListener(this);
     }
 
-    private void gameLoop() throws InterruptedException {
+    private void gameLoop() throws InterruptedException, UnsupportedAudioFileException, IOException, LineUnavailableException {
         while (true){
             board = new int[BOARD_WIDTH][BOARD_HEIGHT];
             xSnakeHead = BOARD_WIDTH/2;
@@ -63,6 +64,13 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
             score = 0;
             while (tick()){
                 if (appleIsGone()){
+
+                    Clip clip = AudioSystem.getClip();
+                    AudioInputStream inputStream = AudioSystem.getAudioInputStream(new File("ressources/boop.wav").getAbsoluteFile());
+                    clip.open(inputStream);
+
+                    clip.start();
+
                     if (speedBoost > 0){
                         currentGameSpeed = 1000/(1000/currentGameSpeed - (speedBoost * SPEED_BOOST_SPEED/100));
                     }
@@ -179,7 +187,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         return true;
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, IOException {
         // write your code here
         fullscreen = false;
         loadFont();
@@ -234,9 +242,6 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                     int alphaColor1 = (int) (appleLightLevel / ((double) 4 * 3.14159265 * Math.pow(appleDistance,2)));
                     alphaColor1 = Math.min(Math.max(0, alphaColor1), 255) ;
 
-                    if (alphaColor1 < 0){
-                        alphaColor1 = 0;
-                    }
                     int alphaSum = Math.min(Math.max(0, alphaColor + alphaColor1), 255);
                     g.setColor(new Color(255-BACKGROUND_COLOR.getRed(),255-BACKGROUND_COLOR.getGreen(),255-BACKGROUND_COLOR.getBlue(), alphaSum));
                     g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -291,9 +296,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
 
         int keyCode = e.getKeyCode();
         switch (keyCode) {
-            case KeyEvent.VK_UP, KeyEvent.VK_RIGHT, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_W, KeyEvent.VK_D, KeyEvent.VK_A, KeyEvent.VK_S -> {
-                queue.add(e);
-            }
+            case KeyEvent.VK_UP, KeyEvent.VK_RIGHT, KeyEvent.VK_LEFT, KeyEvent.VK_DOWN, KeyEvent.VK_W, KeyEvent.VK_D, KeyEvent.VK_A, KeyEvent.VK_S -> queue.add(e);
         }
 
     }
