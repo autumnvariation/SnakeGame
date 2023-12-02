@@ -12,23 +12,30 @@ import java.util.concurrent.TimeUnit;
 
 public class SnakeGamePanel extends JPanel implements KeyListener {
     private static final double START_GAME_SPEED = 10; //FPS
-    private static final double GAME_SPEED_INCREMENT = 5; //FPS
-    private static final double MAX_GAME_SPEED = 100; //FPS
+    private static final double GAME_SPEED_INCREMENT = 0.5; //FPS
+    private static final double MAX_GAME_SPEED = 20; //FPS
+    private static final double SPEED_BOOST_SPEED = 5; //FPS
+    public static final int APPLE_LIGHT_SPEED = 1000; //ms
     private static final int SNAKE_START_SIZE = 3;
-    private static final int BOARD_WIDTH = 160;
-    private static final int BOARD_HEIGHT = 90;
-    private static final int TILE_SIZE = 16;
-    private static final Color SNAKE_RGB = new Color(190, 70, 251);
+    private static final int BOARD_WIDTH = 80;
+    private static final int BOARD_HEIGHT = 45;
+    private static final int TILE_SIZE = 32;
+    private static final Color SNAKE_RGB = new Color(2, 135, 49);
     private static final boolean SHADOW_MODE = true;
     private static final Color BACKGROUND_COLOR = Color.black;
+    public static final int SNAKE_HEAD_LIGHT_LEVEL = 10000;
+    public static final int APPLE_LIGHT_LEVEL = 10000;
+    public static Font customFont;
     public int[][] board;
     public double currentGameSpeed;
     public int xSnakeHead;
     public int ySnakeHead;
-    public int snakeSize;
+    public int snakeLength;
     public int xApplePosition;
     public int yApplePosition;
     public int score;
+    public int speedBoost;
+    public long timeSinceLastApple;
     ArrayList<KeyEvent> queue;
 
     public static JFrame jFrame;
@@ -46,22 +53,33 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
             board = new int[BOARD_WIDTH][BOARD_HEIGHT];
             xSnakeHead = BOARD_WIDTH/2;
             ySnakeHead = BOARD_HEIGHT/2;
-            snakeSize = SNAKE_START_SIZE;
+            snakeLength = SNAKE_START_SIZE;
+            speedBoost = 100;
             currentGameSpeed = ((int)(1000/START_GAME_SPEED));
             queue = new ArrayList<>();
 
-            board[xSnakeHead][ySnakeHead] = snakeSize;
+            board[xSnakeHead][ySnakeHead] = snakeLength;
             createNewApple();
             score = 0;
             while (tick()){
                 if (appleIsGone()){
+                    if (speedBoost > 0){
+                        currentGameSpeed = 1000/(1000/currentGameSpeed - (speedBoost * SPEED_BOOST_SPEED/100));
+                    }
+                    speedBoost=100;
                     score++;
-                    snakeSize++;
+                    snakeLength++;
                     createNewApple();
                     if (currentGameSpeed > 1000/MAX_GAME_SPEED){
                         currentGameSpeed = 1000/(1000/currentGameSpeed + GAME_SPEED_INCREMENT);
                     }
+                    currentGameSpeed = 1000/(1000/currentGameSpeed + SPEED_BOOST_SPEED);
                 }
+                if (speedBoost > 0){
+                    speedBoost--;
+                    currentGameSpeed = 1000/(1000/currentGameSpeed - (SPEED_BOOST_SPEED/100));
+                }
+
                 TimeUnit.MICROSECONDS.sleep((long)currentGameSpeed * 1000);
                 repaint();
             }
@@ -73,6 +91,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
     }
 
     private void createNewApple() {
+        timeSinceLastApple = System.currentTimeMillis();
         Random random = new Random();
         ArrayList<Integer> availableXSquares = new ArrayList<>();
         ArrayList<Integer> availableYSquares = new ArrayList<>();
@@ -99,6 +118,56 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
             queue.remove(0);
         }
 
+        KeyEvent currentKeyEvent = queue.get(0);
+
+        int keyCode = currentKeyEvent.getKeyCode();
+
+        int newXSnakeHead = 0;
+        int newYSnakeHead = 0;
+
+        switch (keyCode) {
+            case KeyEvent.VK_UP, KeyEvent.VK_W -> {
+                newXSnakeHead = xSnakeHead;
+                newYSnakeHead = ySnakeHead - 1;
+                if (newYSnakeHead < 0){
+                    return false;
+                }
+            }
+            case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
+                newXSnakeHead = xSnakeHead;
+                newYSnakeHead = ySnakeHead + 1;
+                if (newYSnakeHead > board[0].length - 1){
+                    return false;
+                }
+            }
+            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {
+                newYSnakeHead = ySnakeHead;
+                newXSnakeHead = xSnakeHead - 1;
+                if (newXSnakeHead < 0){
+                    return false;
+                }
+            }
+            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {
+                newYSnakeHead = ySnakeHead;
+                newXSnakeHead = xSnakeHead + 1;
+                if (newXSnakeHead > board.length - 1){
+                    return false;
+                }
+            }
+        }
+        if (board[newXSnakeHead][newYSnakeHead] == snakeLength - 1){
+            queue.add(previous);
+            queue.remove(0);
+
+            tick();
+            return true;
+        }
+        if (board[newXSnakeHead][newYSnakeHead] > 0){
+            return false;
+        }
+        board[newXSnakeHead][newYSnakeHead] = snakeLength + 1;
+        xSnakeHead = newXSnakeHead;
+        ySnakeHead = newYSnakeHead;
         for (int x = 0; x < board.length; x++) {
             for (int y = 0; y < board[0].length; y++) {
                 if (board[x][y] > 0){
@@ -107,111 +176,13 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
             }
         }
 
-        KeyEvent currentKeyEvent = queue.get(0);
-
-        int keyCode = currentKeyEvent.getKeyCode();
-        switch (keyCode) {
-            case KeyEvent.VK_UP, KeyEvent.VK_W -> {
-                if (ySnakeHead - 1 < 0){
-                    return false;
-                }
-
-                if (board[xSnakeHead][ySnakeHead - 1] == snakeSize - 2){
-                    queue.add(previous);
-                    queue.remove(0);
-                    for (int x = 0; x < board.length; x++) {
-                        for (int y = 0; y < board[0].length; y++) {
-                            if (board[x][y] > 0){
-                                board[x][y]++;
-                            }
-                        }
-                    }
-                    tick();
-                    return true;
-                }
-                if (board[xSnakeHead][ySnakeHead - 1] > 0){
-                    return false;
-                }
-
-                board[xSnakeHead][ySnakeHead - 1] = snakeSize;
-                ySnakeHead--;
-            }
-            case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
-                if (ySnakeHead + 1 > board[0].length - 1){
-                    return false;
-                }
-                if (board[xSnakeHead][ySnakeHead + 1] == snakeSize - 2){
-                    queue.add(previous);
-                    queue.remove(0);
-                    for (int x = 0; x < board.length; x++) {
-                        for (int y = 0; y < board[0].length; y++) {
-                            if (board[x][y] > 0){
-                                board[x][y]++;
-                            }
-                        }
-                    }
-                    tick();
-                    return true;
-                }
-                if (board[xSnakeHead][ySnakeHead + 1] > 0){
-                    return false;
-                }
-                board[xSnakeHead][ySnakeHead + 1] = snakeSize;
-                ySnakeHead++;
-            }
-            case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {
-                if (xSnakeHead - 1 < 0){
-                    return false;
-                }
-                if (board[xSnakeHead - 1][ySnakeHead] == snakeSize - 2){
-                    queue.add(previous);
-                    queue.remove(0);
-                    for (int x = 0; x < board.length; x++) {
-                        for (int y = 0; y < board[0].length; y++) {
-                            if (board[x][y] > 0){
-                                board[x][y]++;
-                            }
-                        }
-                    }
-                    tick();
-                    return true;
-                }
-                if (board[xSnakeHead - 1][ySnakeHead] > 0){
-                    return false;
-                }
-                board[xSnakeHead - 1][ySnakeHead] = snakeSize;
-                xSnakeHead--;
-            }
-            case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {
-                if (xSnakeHead + 1 > board.length - 1){
-                    return false;
-                }
-                if (board[xSnakeHead + 1][ySnakeHead] == snakeSize - 2){
-                    queue.add(previous);
-                    queue.remove(0);
-                    for (int x = 0; x < board.length; x++) {
-                        for (int y = 0; y < board[0].length; y++) {
-                            if (board[x][y] > 0){
-                                board[x][y]++;
-                            }
-                        }
-                    }
-                    tick();
-                    return true;
-                }
-                if (board[xSnakeHead + 1][ySnakeHead] > 0){
-                    return false;
-                }
-                board[xSnakeHead + 1][ySnakeHead] = snakeSize;
-                xSnakeHead++;
-            }
-        }
         return true;
     }
 
     public static void main(String[] args) throws InterruptedException {
         // write your code here
         fullscreen = false;
+        loadFont();
         jFrame = new JFrame();
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         SnakeGamePanel gamePanel = new SnakeGamePanel();
@@ -222,10 +193,8 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         jFrame.setVisible(true);
         gamePanel.gameLoop();
     }
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Font customFont = null;
+
+    private static void loadFont() {
         try {
             customFont = Font.createFont(Font.TRUETYPE_FONT, new File("font\\MinecraftRegular-Bmg3.ttf")).deriveFont((float) TILE_SIZE * 10);
         } catch (FontFormatException | IOException e) {
@@ -235,36 +204,49 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         //register the font
         ge.registerFont(customFont);
+    }
+
+
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
         g.setFont(customFont);
-        g.setColor(new Color(255,0,0,50));
+        g.setColor(new Color(Math.min(Math.max(0,255 - (score * 5)),255),0 ,Math.min(score * 5, 255),50 + 205 * speedBoost/100));
         g.drawString(String.valueOf(score), (((BOARD_WIDTH-1) * TILE_SIZE) / 2) - 2 * TILE_SIZE * String.valueOf(score).length() - (String.valueOf(score).length() - 1) * TILE_SIZE, ((BOARD_HEIGHT - 1) * TILE_SIZE/4));
 
         for (int x = 0; x < board.length; x++) {
             for (int y = 0; y < board[0].length; y++) {
                 if (board[x][y] > 0){
-                    double alphaColor = 205 * ((double)board[x][y] / (double)snakeSize) + 50;
+                    double alphaColor = Math.min(Math.max(0,205 * ((double)board[x][y] / (double) snakeLength) + 50), 255);
                     g.setColor(new Color(SNAKE_RGB.getRed(),SNAKE_RGB.getGreen(),SNAKE_RGB.getBlue(), (int)alphaColor));
                     g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
-                if (board[x][y] == 0 && SHADOW_MODE){
+                if (board[x][y] <= 0 && SHADOW_MODE){
                     double snakeDistance = Math.sqrt(Math.pow(Math.abs(x - xSnakeHead), 2) + Math.pow(Math.abs(y - ySnakeHead), 2));
-                    int alphaColor = (int) (100 * 255/(4 * 3.14159265 * Math.pow(snakeDistance,2)));
+                    int alphaColor = (int) (SNAKE_HEAD_LIGHT_LEVEL/(4 * 3.14159265 * Math.pow(snakeDistance,2)));
                     if (alphaColor < 0){
                         alphaColor = 0;
                     }
-                    double snakeDistance1 = Math.sqrt(Math.pow(Math.abs(x - xApplePosition), 2) + Math.pow(Math.abs(y - yApplePosition), 2));
-                    int alphaColor1 = (int) (100 * 255/(4 * 3.14159265 * Math.pow(snakeDistance1,2)));
+                    double appleDistance = Math.sqrt(Math.pow(Math.abs(x - xApplePosition), 2) + Math.pow(Math.abs(y - yApplePosition), 2));
+                    double percentage = (double)(System.currentTimeMillis() - timeSinceLastApple)/((double)APPLE_LIGHT_SPEED);
+                    double appleLightLevel = (double)APPLE_LIGHT_LEVEL * (1 - percentage);
+                    int alphaColor1 = (int) (appleLightLevel / ((double) 4 * 3.14159265 * Math.pow(appleDistance,2)));
+                    alphaColor1 = Math.min(Math.max(0, alphaColor1), 255) ;
+
                     if (alphaColor1 < 0){
                         alphaColor1 = 0;
                     }
                     int alphaSum = Math.min(Math.max(0, alphaColor + alphaColor1), 255);
                     g.setColor(new Color(255-BACKGROUND_COLOR.getRed(),255-BACKGROUND_COLOR.getGreen(),255-BACKGROUND_COLOR.getBlue(), alphaSum));
                     g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    if (board[x][y] == -1 && SHADOW_MODE){
+                        g.setColor(new Color(Math.min(Math.max(0,255 - (score * 5)),255),0 ,Math.min(score * 5, 255),alphaSum));
+                        g.fillRect(xApplePosition * TILE_SIZE, yApplePosition * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
                 }
             }
         }
-        g.setColor(new Color(255,0,0,255));
-        g.fillRect(xApplePosition * TILE_SIZE, yApplePosition * TILE_SIZE, TILE_SIZE, TILE_SIZE);
     }
 
     @Override
