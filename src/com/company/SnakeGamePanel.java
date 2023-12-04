@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class SnakeGamePanel extends JPanel implements KeyListener {
+public class SnakeGamePanel extends JPanel implements KeyListener{
     private static final double START_GAME_SPEED = 10; //FPS
     private static final double GAME_SPEED_INCREMENT = 0.5; //FPS
     private static final double MAX_GAME_SPEED = 20; //FPS
@@ -19,13 +19,13 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
     public static final int APPLE_LIGHT_SPEED = 1000; //ms
     public static final int FONT_INCREASE_SPEED = 250;
     private static final int SNAKE_START_SIZE = 3;
-    private static final int BOARD_WIDTH = 80;
-    private static final int BOARD_HEIGHT = 45;
-    private static final int TILE_SIZE = 32;
+    private static int boardWidth;
+    private static int boardHeight;
+    public  static final int TILE_SIZE = 32;
     private static final Color SNAKE_RGB = new Color(2, 135, 49);
     private static final boolean SHADOW_MODE = true;
     private static final Color BACKGROUND_COLOR = Color.black;
-    public static final int SNAKE_HEAD_LIGHT_LEVEL = 10000;
+    public static final int SNAKE_HEAD_LIGHT_LEVEL = 5000;
     public static final int APPLE_LIGHT_LEVEL = 10000;
     public static final int FONT_SIZE = TILE_SIZE * 10;
     public static Font customFont;
@@ -41,35 +41,34 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
     public int score;
     public int speedBoost;
     public long timeSinceLastApple;
+    public long timeSinceLastTurn;
     public long timeOfLastTick;
     public ArrayList<Integer> appleInSnakePosition;
     public boolean appleEaten;
     ArrayList<KeyEvent> queue;
-
-    public static JFrame jFrame;
+    public int lastDirection;
+    public boolean paused;
     public static boolean fullscreen;
-    public SnakeGamePanel() {
+    public SnakeGamePanel(int boardWidth, int boardHeight) {
+        SnakeGamePanel.boardWidth = boardWidth;
+        SnakeGamePanel.boardHeight = boardHeight;
         setBackground(new Color(BACKGROUND_COLOR.getRed(),BACKGROUND_COLOR.getGreen(),BACKGROUND_COLOR.getBlue()));
-        setPreferredSize(new Dimension(BOARD_WIDTH * TILE_SIZE, BOARD_HEIGHT * TILE_SIZE));
+        setPreferredSize(new Dimension(SnakeGamePanel.boardWidth * TILE_SIZE, SnakeGamePanel.boardHeight * TILE_SIZE));
         setFocusable(true);
         requestFocusInWindow();
         addKeyListener(this);
+        fullscreen = false;
+        paused = false;
+        loadFont();
     }
 
-    private void gameLoop() throws InterruptedException, UnsupportedAudioFileException, IOException, LineUnavailableException {
+    public void gameLoop() throws InterruptedException, UnsupportedAudioFileException, IOException, LineUnavailableException {
         while (true){
-            board = new int[BOARD_WIDTH][BOARD_HEIGHT];
-            xSnakeHead = BOARD_WIDTH/2;
-            ySnakeHead = BOARD_HEIGHT/2;
-            snakeLength = SNAKE_START_SIZE;
-            speedBoost = 100;
-            currentGameSpeed = ((int)(1000/START_GAME_SPEED));
-            queue = new ArrayList<>();
-            appleInSnakePosition = new ArrayList<>();
-            board[xSnakeHead][ySnakeHead] = snakeLength;
-            createNewApple();
-            score = 0;
+            resetBoard(boardWidth,boardHeight);
             while (tick()){
+                if (paused){
+                    continue;
+                }
                 if (appleIsGone()){
                     score++;
                     appleInSnakePosition.add(snakeLength);
@@ -114,8 +113,8 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         Random random = new Random();
         ArrayList<Integer> availableXSquares = new ArrayList<>();
         ArrayList<Integer> availableYSquares = new ArrayList<>();
-        for (int x = 0; x < BOARD_WIDTH; x++) {
-            for (int y = 0; y < BOARD_HEIGHT; y++) {
+        for (int x = 0; x < boardWidth; x++) {
+            for (int y = 0; y < boardHeight; y++) {
                 if (board[x][y] == 0){
                     availableXSquares.add(x);
                     availableYSquares.add(y);
@@ -127,8 +126,14 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         yApplePosition = availableYSquares.get(rand);
         board[xApplePosition][yApplePosition] = -1;
     }
+    public void setPaused (boolean pause){
+        paused = pause;
+    }
 
-    private boolean tick() {
+    private boolean tick() throws UnsupportedAudioFileException, LineUnavailableException, IOException {
+        if (paused){
+            return true;
+        }
         timeOfLastTick = System.currentTimeMillis();
         if (queue.size() == 0){
             return true;
@@ -144,9 +149,13 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
 
         int newXSnakeHead = 0;
         int newYSnakeHead = 0;
+        if (previous != currentKeyEvent){
 
+            timeSinceLastTurn = System.currentTimeMillis();
+        }
         switch (keyCode) {
             case KeyEvent.VK_UP, KeyEvent.VK_W -> {
+                lastDirection = 1;
                 newXSnakeHead = xSnakeHead;
                 newYSnakeHead = ySnakeHead - 1;
                 if (newYSnakeHead < 0){
@@ -154,6 +163,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                 }
             }
             case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
+                lastDirection = 2;
                 newXSnakeHead = xSnakeHead;
                 newYSnakeHead = ySnakeHead + 1;
                 if (newYSnakeHead > board[0].length - 1){
@@ -161,6 +171,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                 }
             }
             case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {
+                lastDirection = 3;
                 newYSnakeHead = ySnakeHead;
                 newXSnakeHead = xSnakeHead - 1;
                 if (newXSnakeHead < 0){
@@ -168,6 +179,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                 }
             }
             case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {
+                lastDirection = 4;
                 newYSnakeHead = ySnakeHead;
                 newXSnakeHead = xSnakeHead + 1;
                 if (newXSnakeHead > board.length - 1){
@@ -188,6 +200,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         board[newXSnakeHead][newYSnakeHead] = snakeLength + 1;
         xSnakeHead = newXSnakeHead;
         ySnakeHead = newYSnakeHead;
+
         for (int x = 0; x < board.length; x++) {
             for (int y = 0; y < board[0].length; y++) {
                 if (board[x][y] > 0){
@@ -199,24 +212,9 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         return true;
     }
 
-    public static void main(String[] args) throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, IOException {
-        // write your code here
-        fullscreen = false;
-        loadFont();
-        jFrame = new JFrame();
-        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        SnakeGamePanel gamePanel = new SnakeGamePanel();
-        jFrame.add(gamePanel);
-        jFrame.setResizable(false);
-        jFrame.pack();
-        jFrame.setLocationRelativeTo(null);
-        jFrame.setVisible(true);
-        gamePanel.gameLoop();
-    }
-
     private void loadSound() throws LineUnavailableException, UnsupportedAudioFileException, IOException {
         sfx = AudioSystem.getClip();
-        AudioInputStream inputStream = AudioSystem.getAudioInputStream(new File(System.getProperty("user.dir") + "\\resources\\sfx\\boop.wav"));
+        AudioInputStream inputStream = AudioSystem.getAudioInputStream(new File(System.getProperty("user.dir") + "\\resources\\sfx\\boop1.wav"));
         sfx.open(inputStream);
     }
 
@@ -241,7 +239,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
         int fontSize = (int) (FONT_SIZE + fontIncrease);
         g.setFont(customFont.deriveFont((float)fontSize));
         g.setColor(new Color(Math.min(Math.max(0,255 - (score * 5)),255),0 ,Math.min(score * 5, 255),50 + 205 * speedBoost/100));
-        g.drawString(String.valueOf(score), (((BOARD_WIDTH-1) * TILE_SIZE) / 2) - 2 * TILE_SIZE * String.valueOf(score).length() - (String.valueOf(score).length() - 1) * TILE_SIZE - (int)fontIncrease/4, ((BOARD_HEIGHT - 1) * TILE_SIZE/4));
+        g.drawString(String.valueOf(score), (((boardWidth - 1) * TILE_SIZE) / 2) - 2 * TILE_SIZE * String.valueOf(score).length() - (String.valueOf(score).length() - 1) * TILE_SIZE - (int)fontIncrease/4, ((boardHeight - 1) * TILE_SIZE/4) + 128);
 
         for (int x = 0; x < board.length; x++) {
             for (int y = 0; y < board[0].length; y++) {
@@ -257,14 +255,17 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                     g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
                 if (board[x][y] <= 0 && SHADOW_MODE){
-                    double percentage = (double)(System.currentTimeMillis() - timeSinceLastApple)/((double)APPLE_LIGHT_SPEED);
+                    //credit: MONKE
+                    double appleGlowPercentage = (double)(System.currentTimeMillis() - timeSinceLastApple)/((double)750);
+                    double appleGlow = Math.max(0, ((double) 1 - appleGlowPercentage));
+
+                    double turnGlowPercentage = (double)(System.currentTimeMillis() - timeSinceLastTurn)/((double)500);
+                    double turnGlow = Math.max(0, ((double) 1 - turnGlowPercentage));
                     double snakeDistance = Math.sqrt(Math.pow(Math.abs(x - xSnakeHead), 2) + Math.pow(Math.abs(y - ySnakeHead), 2));
-                    int snakeHeadLightAdd = (int) ((double)5 * ((double)1 - percentage));
-                    int alphaColor = (int) (SNAKE_HEAD_LIGHT_LEVEL + snakeHeadLightAdd/(4 * 3.14159265 * Math.pow(snakeDistance,2)));
-                    if (alphaColor < 0){
-                        alphaColor = 0;
-                    }
+                    int alphaColor = (int) ((SNAKE_HEAD_LIGHT_LEVEL + (appleGlow * 10000) + (turnGlow * 5000))/(4 * 3.14159265 * Math.pow(snakeDistance,2)));
+                    alphaColor = Math.min(Math.max(0, alphaColor), 255) ;
                     double appleDistance = Math.sqrt(Math.pow(Math.abs(x - xApplePosition), 2) + Math.pow(Math.abs(y - yApplePosition), 2));
+                    double percentage = (double)(System.currentTimeMillis() - timeSinceLastApple)/((double)APPLE_LIGHT_SPEED);
                     double appleLightLevel = (double)APPLE_LIGHT_LEVEL * (1 - percentage);
                     int alphaColor1 = (int) (appleLightLevel / ((double) 4 * 3.14159265 * Math.pow(appleDistance,2)));
                     alphaColor1 = Math.min(Math.max(0, alphaColor1), 255) ;
@@ -296,11 +297,18 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
+
+        if (e.getKeyCode() == KeyEvent.VK_SPACE){
+            paused = !paused;
+        }
+        if (paused){
+            return;
+        }
         if (e.getKeyCode() == KeyEvent.VK_F11){
             fullscreen = !fullscreen;
+            JFrame jFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
             if (fullscreen){
                 GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-
                 jFrame.dispose();
                 jFrame.setUndecorated(true);
 
@@ -339,5 +347,21 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {
 
+    }
+
+    public void resetBoard(int boardWidth1, int boardHeight1) {
+        boardWidth = boardWidth1;
+        boardHeight = boardHeight1;
+        board = new int[boardWidth][boardHeight];
+        xSnakeHead = boardWidth / 2;
+        ySnakeHead = boardHeight / 2;
+        snakeLength = SNAKE_START_SIZE;
+        speedBoost = 100;
+        currentGameSpeed = ((int)(1000/START_GAME_SPEED));
+        queue = new ArrayList<>();
+        appleInSnakePosition = new ArrayList<>();
+        board[xSnakeHead][ySnakeHead] = snakeLength;
+        createNewApple();
+        score = 0;
     }
 }
