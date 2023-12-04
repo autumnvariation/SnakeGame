@@ -257,13 +257,14 @@ public class SnakeGamePanel extends JPanel implements KeyListener {
                     g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
                 if (board[x][y] <= 0 && SHADOW_MODE){
+                    double percentage = (double)(System.currentTimeMillis() - timeSinceLastApple)/((double)APPLE_LIGHT_SPEED);
                     double snakeDistance = Math.sqrt(Math.pow(Math.abs(x - xSnakeHead), 2) + Math.pow(Math.abs(y - ySnakeHead), 2));
-                    int alphaColor = (int) (SNAKE_HEAD_LIGHT_LEVEL/(4 * 3.14159265 * Math.pow(snakeDistance,2)));
+                    int snakeHeadLightAdd = (int) ((double)5 * ((double)1 - percentage));
+                    int alphaColor = (int) (SNAKE_HEAD_LIGHT_LEVEL + snakeHeadLightAdd/(4 * 3.14159265 * Math.pow(snakeDistance,2)));
                     if (alphaColor < 0){
                         alphaColor = 0;
                     }
                     double appleDistance = Math.sqrt(Math.pow(Math.abs(x - xApplePosition), 2) + Math.pow(Math.abs(y - yApplePosition), 2));
-                    double percentage = (double)(System.currentTimeMillis() - timeSinceLastApple)/((double)APPLE_LIGHT_SPEED);
                     double appleLightLevel = (double)APPLE_LIGHT_LEVEL * (1 - percentage);
                     int alphaColor1 = (int) (appleLightLevel / ((double) 4 * 3.14159265 * Math.pow(appleDistance,2)));
                     alphaColor1 = Math.min(Math.max(0, alphaColor1), 255) ;
