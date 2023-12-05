@@ -15,7 +15,8 @@ public class SnakeGameFrame extends JFrame implements ComponentListener {
     public SnakeGameFrame() throws HeadlessException, UnsupportedAudioFileException, LineUnavailableException, IOException, InterruptedException {
         timeOfLastResize = System.currentTimeMillis();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        gamePanel = new SnakeGamePanel(64,36);
+        gamePanel = new SnakeGamePanel(64,36, 32);
+
         add(gamePanel);
         setResizable(true);
         pack();
@@ -32,7 +33,8 @@ public class SnakeGameFrame extends JFrame implements ComponentListener {
 
     @Override
     public void componentResized(ComponentEvent e) {
-        gamePanel.resetBoard(gamePanel.getWidth()/SnakeGamePanel.TILE_SIZE, gamePanel.getHeight()/SnakeGamePanel.TILE_SIZE);
+
+        gamePanel.setTileSize(gamePanel.getWidth()/64);
     }
 
     @Override
