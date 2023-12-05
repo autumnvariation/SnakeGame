@@ -164,7 +164,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener{
                 newXSnakeHead = xSnakeHead;
                 newYSnakeHead = ySnakeHead - 1;
                 if (newYSnakeHead < 0){
-                    return false;
+                    newYSnakeHead = boardHeight - 1;
                 }
             }
             case KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
@@ -172,7 +172,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener{
                 newXSnakeHead = xSnakeHead;
                 newYSnakeHead = ySnakeHead + 1;
                 if (newYSnakeHead > board[0].length - 1){
-                    return false;
+                    newYSnakeHead = 0;
                 }
             }
             case KeyEvent.VK_LEFT, KeyEvent.VK_A -> {
@@ -180,7 +180,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener{
                 newYSnakeHead = ySnakeHead;
                 newXSnakeHead = xSnakeHead - 1;
                 if (newXSnakeHead < 0){
-                    return false;
+                    newXSnakeHead = boardWidth - 1;
                 }
             }
             case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> {
@@ -188,7 +188,7 @@ public class SnakeGamePanel extends JPanel implements KeyListener{
                 newYSnakeHead = ySnakeHead;
                 newXSnakeHead = xSnakeHead + 1;
                 if (newXSnakeHead > board.length - 1){
-                    return false;
+                    newXSnakeHead = 0;
                 }
             }
         }

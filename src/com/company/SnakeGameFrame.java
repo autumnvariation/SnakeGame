@@ -34,7 +34,7 @@ public class SnakeGameFrame extends JFrame implements ComponentListener {
     @Override
     public void componentResized(ComponentEvent e) {
 
-        gamePanel.setTileSize(gamePanel.getWidth()/64);
+        gamePanel.setTileSize(Math.min(gamePanel.getWidth()/64, gamePanel.getHeight()/36));
     }
 
     @Override
